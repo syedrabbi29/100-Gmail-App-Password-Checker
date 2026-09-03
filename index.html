@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail & App Password Checker</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        .grid { display: flex; gap: 15px; margin-bottom: 15px; }
+        .box { flex: 1; display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; }
+        textarea { height: 160px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; resize: vertical; font-size: 13px; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .stats { margin-top: 20px; padding: 12px; background: #e9ecef; border-radius: 5px; font-size: 16px; font-weight: bold; text-align: center; }
+        .log-box { margin-top: 15px; height: 180px; overflow-y: auto; background: #1e1e1e; color: #fff; padding: 12px; border-radius: 5px; font-family: monospace; font-size: 13px; }
+        .success { color: #4cd137; }
+        .failed { color: #e84118; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Gmail & App Password Checker</h2>
+    
+    <div class="grid">
+        <div class="box">
+            <label>ইমেইল লিস্ট (প্রতি লাইনে ১টি):</label>
+            <textarea id="emails" placeholder="example1@gmail.com&#10;example2@gmail.com"></textarea>
+        </div>
+        <div class="box">
+            <label>অ্যাপ পাসওয়ার্ড লিস্ট (প্রতি লাইনে ১টি):</label>
+            <textarea id="passwords" placeholder="abcd efgh ijkl mnop&#10;qrst uvwx yzab cdef"></textarea>
+        </div>
+    </div>
+
+    <button id="checkBtn" onclick="startChecking()">চেক করুন</button>
+
+    <div class="stats" id="stats">
+        Stats: 0 Success ✅ | 0 Failed ❌
+    </div>
+
+    <div class="log-box" id="logs">ফলাফল এখানে লাইভ দেখা যাবে...</div>
+</div>
+
+<script>
+async function startChecking() {
+    const emails = document.getElementById('emails').value.trim().split('\n').map(e => e.trim()).filter(e => e);
+    const passwords = document.getElementById('passwords').value.trim().split('\n').map(p => p.trim()).filter(p => p);
+    const btn = document.getElementById('checkBtn');
+    const logs = document.getElementById('logs');
+    const stats = document.getElementById('stats');
+
+    if (emails.length === 0 || passwords.length === 0) {
+        alert("দয়া করে উভয় বক্সে তথ্য দিন!");
+        return;
+    }
+
+    if (emails.length !== passwords.length) {
+        alert(`ইমেইল (${emails.length}) এবং পাসওয়ার্ডের (${passwords.length}) সংখ্যা সমান নয়!`);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "চেক করা হচ্ছে...";
+    logs.innerHTML = "";
+    
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < emails.length; i++) {
+        const email = emails[i];
+        const password = passwords[i];
+
+        logs.innerHTML += `<div>[${i+1}/${emails.length}] Checking: ${email} ...</div>`;
+        logs.scrollTop = logs.scrollHeight;
+
+        try {
+            const res = await fetch('/check-single', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (data.isValid) {
+                successCount++;
+                logs.innerHTML += `<div class="success">${i+1} Success ✅ (${email})</div>`;
+            } else {
+                failedCount++;
+                logs.innerHTML += `<div class="failed">${i+1} Failed ❌ (${email})</div>`;
+            }
+        } catch (err) {
+            failedCount++;
+            logs.innerHTML += `<div class="failed">${i+1} Failed ❌ (Network Error)</div>`;
+        }
+
+        stats.innerText = `Stats: ${successCount} Success ✅ | ${failedCount} Failed ❌`;
+        logs.scrollTop = logs.scrollHeight;
+    }
+
+    btn.disabled = false;
+    btn.innerText = "চেক করুন";
+}
+</script>
+
+</body>
+</html>
