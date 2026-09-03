@@ -1,329 +1,278 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Gmail & App Password Checker (Mobile Optimized)</title>
+<title>Gmail App Password Checker</title>
 <style>
   :root{
-    --bg:#f4f6f9;
-    --card:#ffffff;
-    --muted:#6b7280;
-    --success:#16a34a;
-    --danger:#ef4444;
-    --accent:#0ea5e9;
-    --line:#e6eef6;
-    --max-width:760px;
-    --log-font: 13px/1.4 "Courier New", Courier, monospace;
+    --bg: #0f1724;
+    --card: #0b1220;
+    --muted: #94a3b8;
+    --accent: linear-gradient(90deg,#06b6d4,#60a5fa);
+    --glass: rgba(255,255,255,0.04);
+    --success: #10b981;
+    --danger: #ef4444;
+    --max-width:900px;
+    --log-font: 13px/1.4 "SFMono-Regular",Menlo,Monaco,monospace;
   }
-  html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#0f172a}
-  .container{max-width:var(--max-width);margin:14px auto;padding:16px;border-radius:12px;background:var(--card);box-shadow:0 6px 18px rgba(2,6,23,0.08);}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-  h1{font-size:18px;margin:0;color:#0b1220}
-  p.subtitle{margin:0;color:var(--muted);font-size:13px}
-  .form{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-  label{font-size:13px;color:#0b1220;font-weight:600;margin-bottom:6px}
-  textarea{width:100%;min-height:120px;padding:10px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;resize:vertical;background:#fff}
-  .row{display:flex;gap:12px}
-  .col{flex:1;display:flex;flex-direction:column}
-  .controls{display:flex;gap:10px;margin-top:8px;align-items:center}
-  button.primary{flex:1;padding:12px;border-radius:10px;border:0;background:var(--accent);color:white;font-weight:700;font-size:15px;cursor:pointer}
-  button.ghost{padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:white;color:#0b1220;cursor:pointer}
-  button[disabled]{opacity:0.6;cursor:not-allowed}
-  .stats{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-radius:10px;background:#f8fafc;border:1px solid var(--line);margin-top:12px;font-size:13px}
-  .stats .left{font-weight:700;color:#0b1220}
-  .stats .right{color:var(--muted);font-weight:600}
-  .progress{height:8px;background:#e6eef6;border-radius:8px;overflow:hidden;flex:1;margin-left:10px}
-  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#60a5fa);width:0%}
-  .log-box{margin-top:12px;height:280px;overflow:auto;background:#0b1220;color:#dbeafe;padding:10px;border-radius:10px;font:var(--log-font);line-height:1.5}
-  .result-line{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:6px}
-  .result-index{min-width:36px;color:#94a3b8;font-weight:700}
-  .result-email{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .result-status{font-weight:700;min-width:100px;text-align:right}
-  .success{color:var(--success)}
-  .failed{color:var(--danger)}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#071022 0%, #07162b 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#e6eef8}
+  .wrap{max-width:var(--max-width);margin:20px auto;padding:20px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 10px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+  .title {display:flex;gap:12px;align-items:center}
+  .logo {
+    width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#60a5fa,#06b6d4);display:grid;place-items:center;color:white;font-weight:800;box-shadow:0 6px 18px rgba(6,165,255,0.16)
+  }
+  h1{font-size:18px;margin:0}
+  p.lead{margin:0;color:var(--muted);font-size:13px}
+  .grid{display:flex;gap:14px;margin-top:10px}
+  .col{flex:1;display:flex;flex-direction:column;gap:8px}
+  label{font-size:13px;color:#cfe8ff;font-weight:600}
+  textarea{width:100%;min-height:150px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));color:#e6eef8;resize:vertical;font-size:14px;outline:none}
+  textarea::placeholder{color:#6b7786}
+  .controls{display:flex;gap:10px;margin-top:10px;align-items:center}
+  button.primary{
+    padding:12px 18px;border-radius:10px;border:0;background:linear-gradient(90deg,#06b6d4,#60a5fa);color:#06203a;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 6px 18px rgba(6,165,255,0.12);
+  }
+  button.ghost{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--muted);cursor:pointer}
+  button:disabled{opacity:0.5;cursor:not-allowed}
+  .stats{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:12px;border-radius:12px;background:var(--glass);border:1px solid rgba(255,255,255,0.02)}
+  .stats .left{display:flex;flex-direction:column}
+  .big{font-weight:800;font-size:15px;color:#e6f7ff}
+  .small{font-size:13px;color:var(--muted)}
+  .progress-wrap{display:flex;align-items:center;gap:12px;flex:1}
+  .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden;flex:1}
+  .bar{height:100%;background:linear-gradient(90deg,#06b6d4,#60a5fa);width:0%}
+  .log-box{margin-top:12px;height:320px;overflow:auto;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);font:var(--log-font);color:#dff6ff}
+  .line{display:flex;align-items:center;gap:12px;padding:8px;border-radius:8px}
+  .index{min-width:36px;color:#9fb8cf;font-weight:700}
+  .email{flex:1;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .status{min-width:120px;text-align:right;font-weight:700}
+  .ok{color:var(--success)}
+  .bad{color:var(--danger)}
   .info{color:#f59e0b}
-  .small{font-size:12px;color:var(--muted)}
-  .footer{margin-top:12px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;align-items:center}
-  .lock-toggle{display:inline-flex;gap:6px;align-items:center}
-  @media (max-width:600px){
-    .row{flex-direction:column}
-    textarea{min-height:100px}
+  footer.meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:13px}
+  .hint{font-size:12px;color:var(--muted)}
+  @media (max-width:800px){
+    .grid{flex-direction:column}
+    textarea{min-height:110px}
     .log-box{height:220px}
   }
 </style>
 </head>
 <body>
-  <div class="container" role="main">
+  <div class="wrap" role="main">
     <header>
-      <div>
-        <h1>Gmail & App Password Checker</h1>
-        <p class="subtitle">মোবাইল-প্রথম, হালকা ও দ্রুত। চেক চলাকালীন লগিন/তথ্য পরিবর্তন অক্ষম থাকবে।</p>
+      <div class="title">
+        <div class="logo" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7z" fill="#fff" opacity="0.12"/><path d="M4 8.5a8 8 0 0 0 16 0" stroke="#fff" stroke-opacity="0.85" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+        <div>
+          <h1>Gmail App Password Checker</h1>
+          <p class="lead">Sequential checks · lightweight · mobile-optimized</p>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Endpoint: <code style="background:rgba(255,255,255,0.03);padding:4px 8px;border-radius:6px;color:#bfe8ff">POST /check-single</code></div>
       </div>
     </header>
 
-    <form id="checkerForm" class="form" onsubmit="return false;" autocomplete="off" novalidate>
-      <div class="row">
+    <form id="checker" onsubmit="return false" autocomplete="off" novalidate>
+      <div class="grid">
         <div class="col">
-          <label for="emails">ইমেইল লিস্ট (প্রতি লাইনে ১টি):</label>
-          <textarea id="emails" placeholder="example1@gmail.com
-example2@gmail.com" inputmode="email" spellcheck="false"></textarea>
+          <label for="emails">Email list (one per line)</label>
+          <textarea id="emails" placeholder="alice@gmail.com
+bob@gmail.com" inputmode="email" spellcheck="false"></textarea>
         </div>
         <div class="col">
-          <label for="passwords">অ্যাপ পাসওয়ার্ড লিস্ট (প্রতি লাইনে ১টি):</label>
+          <label for="passwords">App password list (one per line)</label>
           <textarea id="passwords" placeholder="abcd efgh ijkl mnop
-qrst uvwx yzab cdef" spellcheck="false"></textarea>
+qrst uvwx yzab cdef" spellcheck="false" ></textarea>
         </div>
       </div>
 
       <div class="controls">
-        <button id="checkBtn" class="primary" type="button">চেক করুন</button>
-        <button id="unlockBtn" class="ghost" type="button" title="Unlock inputs to edit" style="display:none">Unlock Editing</button>
+        <button id="checkBtn" class="primary" type="button">Check</button>
+        <button id="clearBtn" class="ghost" type="button">Clear Logs</button>
       </div>
 
-      <div class="stats" aria-hidden="false">
+      <div class="stats" role="status" aria-live="polite">
         <div class="left">
-          <span id="summaryText">Ready — 0 total</span>
+          <div class="big" id="summary">Ready — 0 total</div>
+          <div class="small" id="sub">Idle</div>
         </div>
-        <div style="display:flex;align-items:center;flex:1;gap:8px">
+        <div class="progress-wrap">
           <div class="small">Progress</div>
-          <div class="progress" aria-hidden="true" title="	progress">
-            <i id="progressBar" style="width:0%"></i>
-          </div>
-          <div class="right small" id="countText">0 ✅ | 0 ❌</div>
+          <div class="progress" aria-hidden="true"><div class="bar" id="bar"></div></div>
+          <div class="small" id="counts">0 ✅ | 0 ❌</div>
         </div>
       </div>
 
       <div id="logs" class="log-box" aria-live="polite" aria-atomic="false">
-        1) ফলাফল এখানে লাইভ দেখা যাবে...
+        1) Results will appear here...
       </div>
 
-      <div class="footer">
-        <div class="small">Server endpoint: <code>/check-single</code></div>
-        <div class="lock-toggle small" id="lockNote">Inputs unlocked</div>
-      </div>
+      <footer class="meta">
+        <div class="hint">Sequential, one request per email. Network timeout per request: 25s.</div>
+        <div class="hint">UI only — backend must implement /check-single</div>
+      </footer>
     </form>
   </div>
 
 <script>
-/*
- Mobile-optimized checker script
- - Concurrency-limited fetch pool (default CONCURRENCY = 3)
- - DOM-updates are incremental, not using innerHTML repeatedly
- - Logs limited (MAX_LOGS) to avoid excessive memory usage on low-RAM devices
- - Inputs are locked while checking; after completion inputs remain locked (per requirement "login কোনো চেঞ্জ করা যাবে না").
-   An "Unlock Editing" button is provided if the user intentionally wants to edit again.
-*/
-
-(() => {
-  const checkBtn = document.getElementById('checkBtn');
-  const unlockBtn = document.getElementById('unlockBtn');
+/* Sequential checker (follows original logic) — optimized DOM updates, limited logs to save memory */
+(function(){
   const emailsEl = document.getElementById('emails');
   const passwordsEl = document.getElementById('passwords');
+  const checkBtn = document.getElementById('checkBtn');
+  const clearBtn = document.getElementById('clearBtn');
   const logsEl = document.getElementById('logs');
-  const summaryText = document.getElementById('summaryText');
-  const countText = document.getElementById('countText');
-  const progressBar = document.getElementById('progressBar');
-  const lockNote = document.getElementById('lockNote');
+  const summaryEl = document.getElementById('summary');
+  const subEl = document.getElementById('sub');
+  const countsEl = document.getElementById('counts');
+  const barEl = document.getElementById('bar');
 
-  // Tunables
-  const CONCURRENCY = 3;      // small parallelism — balance speed and device/network constraints
-  const MAX_LOGS = 300;       // maximum number of lines kept in DOM to limit memory usage
+  const TIMEOUT_MS = 25000;   // per-request timeout
+  const MAX_LOGS = 300;       // keep DOM light
 
-  let locked = false;
-
-  function setLocked(val) {
-    locked = !!val;
-    emailsEl.readOnly = locked;
-    passwordsEl.readOnly = locked;
-    checkBtn.disabled = locked;
-    unlockBtn.style.display = locked ? 'inline-flex' : 'none';
-    lockNote.textContent = locked ? 'Inputs locked (cannot change login while locked)' : 'Inputs unlocked';
+  function splitLines(s){
+    return (s || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
   }
 
-  function sanitizeLines(text) {
-    return text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  function setButtonState(running){
+    checkBtn.disabled = running;
+    checkBtn.textContent = running ? 'Checking...' : 'Check';
   }
 
-  function appendLogLine(index, email, status, message) {
-    // status: 'success'|'failed'|'info'
-    const div = document.createElement('div');
-    div.className = 'result-line';
+  function appendLine(index, email, status, text){
+    // status: 'success' | 'failed' | 'info'
+    const row = document.createElement('div');
+    row.className = 'line';
     const idx = document.createElement('div');
-    idx.className = 'result-index';
-    idx.textContent = `${index}.`;
+    idx.className = 'index';
+    idx.textContent = `${index}`;
     const em = document.createElement('div');
-    em.className = 'result-email';
-    em.textContent = `${email}`;
-    const stat = document.createElement('div');
-    stat.className = 'result-status';
+    em.className = 'email';
+    em.textContent = email;
+    const st = document.createElement('div');
+    st.className = 'status';
 
     if (status === 'success') {
-      stat.classList.add('success');
-      stat.textContent = `Success ✅ ${message ?? ''}`;
+      st.classList.add('ok');
+      st.textContent = `Success ✅ ${text || ''}`;
     } else if (status === 'failed') {
-      stat.classList.add('failed');
-      stat.textContent = `Failed ❌ ${message ?? ''}`;
+      st.classList.add('bad');
+      st.textContent = `Failed ❌ ${text || ''}`;
     } else {
-      stat.classList.add('info');
-      stat.textContent = `${message ?? ''}`;
+      st.classList.add('info');
+      st.textContent = `${text || ''}`;
     }
 
-    div.appendChild(idx);
-    div.appendChild(em);
-    div.appendChild(stat);
+    row.appendChild(idx);
+    row.appendChild(em);
+    row.appendChild(st);
+    logsEl.appendChild(row);
 
-    logsEl.appendChild(div);
-
-    // keep scroll at bottom
+    // auto-scroll to bottom
     logsEl.scrollTop = logsEl.scrollHeight;
 
-    // trim old logs to limit memory usage
+    // trim old log entries
     while (logsEl.children.length > MAX_LOGS) {
       logsEl.removeChild(logsEl.firstChild);
     }
   }
 
-  function updateStats(total, done, success, failed) {
-    summaryText.textContent = `Total ${total} • Done ${done}`;
-    countText.textContent = `${success} ✅ | ${failed} ❌`;
-    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-    progressBar.style.width = pct + '%';
+  function updateSummary(total, done, ok, failed){
+    summaryEl.textContent = `Total ${total} • Done ${done}`;
+    countsEl.textContent = `${ok} ✅ | ${failed} ❌`;
+    subEl.textContent = done < total ? `Checking (${done}/${total})` : (total === 0 ? 'Idle' : 'Completed');
+    const pct = total === 0 ? 0 : Math.round((done/total)*100);
+    barEl.style.width = pct + '%';
   }
 
-  // Concurrency-limited worker pool: returns a Promise that resolves when all tasks done
-  async function processWithPool(items, workerFn, concurrency = 3) {
-    return new Promise((resolve) => {
-      let i = 0;
-      let running = 0;
-      const total = items.length;
-      let done = 0;
-
-      function next() {
-        if (done >= total) {
-          if (running === 0) resolve();
-          return;
-        }
-        while (running < concurrency && i < total) {
-          const idx = i++;
-          running++;
-          workerFn(items[idx], idx)
-            .catch(() => {
-              // swallow here — individual errors handled in workerFn
-            })
-            .finally(() => {
-              running--;
-              done++;
-              next();
-            });
-        }
-      }
-      next();
-    });
+  function createTimeoutSignal(ms){
+    const ac = new AbortController();
+    const id = setTimeout(() => ac.abort(), ms);
+    return { signal: ac.signal, clear: () => clearTimeout(id) };
   }
 
-  async function checkPair(pair, idxBase) {
-    const { email, password, index } = pair;
-    // minimal payload to server
+  async function postCheck(email, password){
+    const { signal, clear } = createTimeoutSignal(TIMEOUT_MS);
     try {
       const res = await fetch('/check-single', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ email, password }),
-        // small timeout using AbortController (avoid hanging requests)
-      , signal: (function(){
-          const ac = new AbortController();
-          // timeout 25s per request (adjustable)
-          setTimeout(()=>ac.abort(), 25000);
-          return ac.signal;
-        })()
+        signal
       });
+      clear();
       if (!res.ok) {
-        appendLogLine(index, email, 'failed', `HTTP ${res.status}`);
-        return { ok: false };
+        return { ok: false, error: `HTTP ${res.status}` };
       }
       const data = await res.json();
-      if (data && data.isValid) {
-        appendLogLine(index, email, 'success', '');
-        return { ok: true };
-      } else {
-        appendLogLine(index, email, 'failed', '');
-        return { ok: false };
-      }
+      const valid = !!(data && data.isValid);
+      return { ok: valid };
     } catch (err) {
-      const msg = err && err.name === 'AbortError' ? 'Timeout' : 'Network';
-      appendLogLine(index, email, 'failed', msg);
-      return { ok: false };
+      const name = err && err.name === 'AbortError' ? 'Timeout' : 'Network';
+      return { ok: false, error: name };
     }
   }
 
-  checkBtn.addEventListener('click', async () => {
-    if (locked) return;
-    // parse inputs
-    const emails = sanitizeLines(emailsEl.value || '');
-    const passwords = sanitizeLines(passwordsEl.value || '');
+  async function startChecking(){
+    const emails = splitLines(emailsEl.value);
+    const passwords = splitLines(passwordsEl.value);
+
     if (emails.length === 0 || passwords.length === 0) {
-      alert('দয়া করে উভয় বক্সে তথ্য দিন!');
+      alert('Please provide both email and password lists.');
       return;
     }
     if (emails.length !== passwords.length) {
-      alert(`ইমেইল (${emails.length}) এবং পাসওয়ার্ডের (${passwords.length}) সংখ্যা সমান নয়!`);
+      alert(`Email count (${emails.length}) and password count (${passwords.length}) are not equal!`);
       return;
     }
 
-    // Lock inputs and UI
-    setLocked(true);
-    logsEl.innerHTML = ''; // start fresh
-    appendLogLine(1, '---', 'info', 'চেক শুরু করা হয়েছে...');
+    setButtonState(true);
+    logsEl.innerHTML = ''; // fresh logs
+    appendLine(1, '—', 'info', 'Starting checks...');
 
+    let success = 0, failed = 0, done = 0;
     const total = emails.length;
-    let successCount = 0, failedCount = 0, doneCount = 0;
 
-    updateStats(total, doneCount, successCount, failedCount);
+    updateSummary(total, done, success, failed);
 
-    // prepare items
-    const items = emails.map((em, i) => ({ email: em, password: passwords[i], index: i + 1 }));
-
-    // worker function updates global counts and UI
-    const worker = async (pair) => {
-      // append a light "checking" info line for each item (helps mobile see progress)
-      appendLogLine(pair.index, pair.email, 'info', 'Checking...');
-      const result = await checkPair(pair, pair.index);
-      if (result.ok) successCount++;
-      else failedCount++;
-      doneCount++;
-      updateStats(total, doneCount, successCount, failedCount);
-      return result;
-    };
-
-    // process with pool (concurrency-limited)
-    await processWithPool(items, worker, CONCURRENCY);
-
-    // final summary
-    appendLogLine(total + 1, '---', 'info', `চেক সম্পন্ন— ${successCount} সফল, ${failedCount} ব্যর্থ`);
-    updateStats(total, total, successCount, failedCount);
-
-    // Keep inputs locked per requirement ("login কোনো চেঞ্জ করা যাবে না।")
-    // Show unlock button in case user intentionally wants to edit later
-    setLocked(true);
-  });
-
-  // Unlock button requires a confirmation tap to avoid accidental edits.
-  unlockBtn.addEventListener('click', () => {
-    // require a confirm to avoid accidental unlocking
-    const ok = confirm('আপনি কি নিশ্চিত যে লিস্টগুলো সম্পাদনা করতে চান? (সতর্কতা: পূর্বের লগ মুছে যেতে পারে)');
-    if (ok) {
-      setLocked(false);
-      // show hint
-      appendLogLine('i', '---', 'info', 'Inputs unlocked by user.');
+    for (let i = 0; i < total; i++) {
+      const email = emails[i];
+      const password = passwords[i];
+      // show checking info line
+      appendLine(i+1, email, 'info', 'Checking...');
+      // sequential request (await)
+      const result = await postCheck(email, password);
+      if (result.ok) {
+        success++;
+        appendLine(i+1, email, 'success', '');
+      } else {
+        failed++;
+        appendLine(i+1, email, 'failed', result.error || '');
+      }
+      done++;
+      updateSummary(total, done, success, failed);
+      // small yield to UI for better responsiveness on low-end devices
+      await new Promise(r => setTimeout(r, 50));
     }
+
+    appendLine(total+1, '—', 'info', `Completed: ${success} success, ${failed} failed`);
+    updateSummary(total, total, success, failed);
+    setButtonState(false);
+  }
+
+  checkBtn.addEventListener('click', startChecking);
+
+  clearBtn.addEventListener('click', () => {
+    logsEl.innerHTML = 'Cleared logs';
+    setTimeout(() => { if (logsEl.innerHTML === 'Cleared logs') logsEl.innerHTML = ''; }, 600);
   });
 
-  // initialize
-  setLocked(false);
-  updateStats(0,0,0,0);
-
-  // Accessibility: ensure logs are announced; aria-live used on container
+  // Initial UI
+  updateSummary(0,0,0,0);
 })();
 </script>
 </body>
