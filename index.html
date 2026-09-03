@@ -79,10 +79,13 @@
   .bad{background:linear-gradient(90deg, rgba(239,68,68,0.06), rgba(239,68,68,0.03));color:var(--danger)}
   .info{background:transparent;color:var(--muted)}
   .note{font-size:12px;color:var(--muted);margin-top:10px}
+  .copy-btn{min-width:140px}
   @media (max-width:760px){
     .grid{flex-direction:column}
     .log{height:220px}
     textarea{min-height:100px}
+    .controls{flex-direction:column}
+    .copy-btn{width:100%}
   }
 </style>
 </head>
@@ -92,7 +95,7 @@
       <div class="logo">G</div>
       <div>
         <h1>Gmail App Password Checker</h1>
-        <p class="sub">Clean, minimal UI — sequential checks</p>
+        <p class="sub">Clean, minimal UI — sequential checks — one row per email</p>
       </div>
     </div>
 
@@ -111,6 +114,7 @@ qrst uvwx yzab cdef" spellcheck="false"></textarea>
 
     <div class="controls">
       <button id="checkBtn" class="primary" type="button">Check</button>
+      <button id="copyBtn" class="ghost copy-btn" type="button" disabled title="Copy emoji results (one per line) to clipboard">Copy Results</button>
       <button id="clearBtn" class="ghost" type="button">Clear Logs</button>
     </div>
 
@@ -123,7 +127,7 @@ qrst uvwx yzab cdef" spellcheck="false"></textarea>
     </div>
 
     <div id="logs" class="log" aria-live="polite" aria-atomic="false">
-      1) Results will appear here...
+      <!-- rows inserted here -->
     </div>
 
     <div class="note" id="note">Endpoint: POST /check-single — payload: { "email", "password" } — expects { "isValid": true/false }</div>
@@ -131,58 +135,40 @@ qrst uvwx yzab cdef" spellcheck="false"></textarea>
 
 <script>
 /*
- - Sequential checking (one by one) following original logic.
- - Duplicate emails are removed (first occurrence kept) so each email is shown once.
- - UI locked during checking.
- - Success rows show full-line green styling.
- - Minimal text UI.
+ - Sequential checking, one DOM row per email (created once).
+ - Duplicate emails are removed (first occurrence kept).
+ - Copy Results button copies one emoji per email in the processed order (✅ or ❌), each on its own line,
+   so pasting into Google Sheets column A will place each emoji into its own row.
 */
 
 (function(){
   const emailsEl = document.getElementById('emails');
   const passwordsEl = document.getElementById('passwords');
   const checkBtn = document.getElementById('checkBtn');
+  const copyBtn = document.getElementById('copyBtn');
   const clearBtn = document.getElementById('clearBtn');
   const logsEl = document.getElementById('logs');
   const summaryEl = document.getElementById('summary');
   const countsEl = document.getElementById('counts');
   const barEl = document.getElementById('bar');
-  const noteEl = document.getElementById('note');
 
   const TIMEOUT_MS = 25000;
-  const MAX_LOGS = 400;
+  const MAX_LOGS = 800; // safety, though we render one row per email
+
+  let pairs = [];      // deduped {email, password}
+  let results = [];    // same length as pairs, '✅' or '❌' or ''
+  let running = false;
 
   function splitLines(s){
     return (s || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
   }
 
   function setRunning(r){
+    running = r;
     checkBtn.disabled = r;
-    checkBtn.textContent = r ? 'Checking...' : 'Check';
     emailsEl.readOnly = r;
     passwordsEl.readOnly = r;
-  }
-
-  function appendRow(i, email, statusText, kind){
-    // kind: 'ok'|'bad'|'info'
-    // Ensure one row per email display is enforced by dedupe earlier
-    const row = document.createElement('div');
-    row.className = 'row ' + (kind === 'ok' ? 'ok' : kind === 'bad' ? 'bad' : 'info');
-
-    const idx = document.createElement('div'); idx.className='idx'; idx.textContent = i;
-    const em = document.createElement('div'); em.className='email'; em.textContent = email;
-    const st = document.createElement('div'); st.className='status'; st.textContent = statusText;
-
-    row.appendChild(idx);
-    row.appendChild(em);
-    row.appendChild(st);
-    logsEl.appendChild(row);
-
-    // scroll
-    logsEl.scrollTop = logsEl.scrollHeight;
-
-    // trim
-    while (logsEl.children.length > MAX_LOGS) logsEl.removeChild(logsEl.firstChild);
+    copyBtn.disabled = !(!r && results.length > 0);
   }
 
   function updateSummary(total, done, ok, failed){
@@ -192,100 +178,179 @@ qrst uvwx yzab cdef" spellcheck="false"></textarea>
     barEl.style.width = pct + '%';
   }
 
+  function createRow(i, email){
+    const row = document.createElement('div');
+    row.className = 'row info';
+    row.dataset.idx = i;
+    const idx = document.createElement('div'); idx.className='idx'; idx.textContent = (i+1);
+    const em = document.createElement('div'); em.className='email'; em.textContent = email;
+    const st = document.createElement('div'); st.className='status'; st.textContent = 'Pending';
+    row.appendChild(idx);
+    row.appendChild(em);
+    row.appendChild(st);
+    logsEl.appendChild(row);
+    return row;
+  }
+
+  function setRowStatus(i, kind, text){
+    // kind: 'ok' | 'bad' | 'info'
+    const row = logsEl.querySelector(`.row[data-idx="${i}"]`);
+    if (!row) return;
+    row.classList.remove('info','ok','bad');
+    row.classList.add(kind === 'ok' ? 'ok' : kind === 'bad' ? 'bad' : 'info');
+    const st = row.querySelector('.status');
+    if (st) st.textContent = text;
+    // scroll to updated row
+    row.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
   function timeoutSignal(ms){
     const ac = new AbortController();
     const id = setTimeout(()=>ac.abort(), ms);
-    return {signal: ac.signal, clear: ()=>clearTimeout(id)};
+    return { signal: ac.signal, clear: ()=>clearTimeout(id) };
   }
 
   async function postCheck(email, password){
-    const {signal, clear} = timeoutSignal(TIMEOUT_MS);
+    const { signal, clear } = timeoutSignal(TIMEOUT_MS);
     try {
       const res = await fetch('/check-single', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ email, password }),
         signal
       });
       clear();
-      if (!res.ok) return { ok: false, err: `HTTP ${res.status}` };
+      if (!res.ok) return { ok:false, err:`HTTP ${res.status}` };
       const data = await res.json();
       return { ok: !!(data && data.isValid) };
     } catch (err) {
-      const errName = err && err.name === 'AbortError' ? 'Timeout' : 'Network';
-      return { ok: false, err: errName };
+      const name = err && err.name === 'AbortError' ? 'Timeout' : 'Network';
+      return { ok:false, err: name };
     }
   }
 
-  checkBtn.addEventListener('click', async () => {
-    const emails = splitLines(emailsEl.value);
-    const passwords = splitLines(passwordsEl.value);
-
-    if (emails.length === 0 || passwords.length === 0){
-      alert('Please fill both lists.');
-      return;
-    }
-    if (emails.length !== passwords.length){
-      alert(`Email count (${emails.length}) and password count (${passwords.length}) are not equal.`);
-      return;
-    }
-
-    // Build deduped pairs (keep first occurrence)
+  // Build deduped pairs and render one row per pair
+  function preparePairs(rawEmails, rawPasswords){
     const seen = new Set();
-    const pairs = [];
-    for (let i=0;i<emails.length;i++){
-      const e = emails[i];
-      const p = passwords[i];
-      if (!seen.has(e.toLowerCase())){
-        seen.add(e.toLowerCase());
-        pairs.push({ email: e, password: p });
+    const outPairs = [];
+    for (let i = 0; i < rawEmails.length; i++){
+      const e = rawEmails[i];
+      const p = rawPasswords[i] ?? '';
+      const key = e.toLowerCase();
+      if (!seen.has(key)){
+        seen.add(key);
+        outPairs.push({ email: e, password: p });
       }
     }
-    const duplicatesRemoved = emails.length - pairs.length;
+    return outPairs;
+  }
 
-    setRunning(true);
-    logsEl.innerHTML = ''; // fresh
-    appendRow(1, '—', 'Starting...', 'info');
+  async function start(){
+    if (running) return;
+    const rawEmails = splitLines(emailsEl.value);
+    const rawPasswords = splitLines(passwordsEl.value);
 
-    if (duplicatesRemoved > 0) {
-      appendRow(2, '—', `Duplicates removed: ${duplicatesRemoved}`, 'info');
+    if (rawEmails.length === 0 || rawPasswords.length === 0){
+      alert('Please provide both email and password lists.');
+      return;
+    }
+    if (rawEmails.length !== rawPasswords.length){
+      alert(`Email count (${rawEmails.length}) and password count (${rawPasswords.length}) are not equal.`);
+      return;
     }
 
+    pairs = preparePairs(rawEmails, rawPasswords);
+    results = new Array(pairs.length).fill(''); // empty until checked
+
+    // render rows once
+    logsEl.innerHTML = '';
+    // optional: show duplicates info
+    const dupCount = rawEmails.length - pairs.length;
+    if (dupCount > 0){
+      const info = document.createElement('div');
+      info.className = 'row info';
+      info.style.fontStyle = 'italic';
+      info.textContent = `Duplicates removed: ${dupCount} (first occurrence kept)`;
+      logsEl.appendChild(info);
+    }
+    pairs.forEach((p, i) => createRow(i, p.email));
+
+    setRunning(true);
+    updateSummary(pairs.length, 0, 0, 0);
+
     let ok = 0, failed = 0, done = 0;
-    updateSummary(pairs.length, done, ok, failed);
-
-    for (let i=0;i<pairs.length;i++){
+    for (let i = 0; i < pairs.length; i++){
       const pair = pairs[i];
-      const idx = i+1;
-      appendRow(idx, pair.email, 'Checking...', 'info');
-
+      // show checking state
+      setRowStatus(i, 'info', 'Checking...');
+      // sequential call
       const r = await postCheck(pair.email, pair.password);
       if (r.ok){
+        results[i] = '✅';
         ok++;
-        appendRow(idx, pair.email, 'Success ✅', 'ok');
+        setRowStatus(i, 'ok', 'Success ✅');
       } else {
+        results[i] = '❌';
         failed++;
-        appendRow(idx, pair.email, `Failed ❌ ${r.err ? '('+r.err+')' : ''}`, 'bad');
+        setRowStatus(i, 'bad', `Failed ❌${r.err ? ' ('+r.err+')' : ''}`);
       }
       done++;
       updateSummary(pairs.length, done, ok, failed);
-
-      // small yield to keep UI responsive on low-end devices
-      await new Promise(res=>setTimeout(res,30));
+      // brief yield so UI can update smoothly on low-end devices
+      await new Promise(res => setTimeout(res, 25));
     }
 
-    appendRow(pairs.length + 2, '—', `Completed: ${ok} success, ${failed} failed`, 'info');
-    updateSummary(pairs.length, pairs.length, ok, failed);
-    setRunning(false);
-  });
+    // finished
+    const finish = document.createElement('div');
+    finish.className = 'row info';
+    finish.textContent = `Completed: ${ok} success, ${failed} failed`;
+    logsEl.appendChild(finish);
 
+    // enable copy button
+    copyBtn.disabled = results.length === 0;
+    setRunning(false);
+  }
+
+  // Copy results: one emoji per line in same order as displayed rows
+  async function copyResults(){
+    if (!results || results.length === 0) return;
+    const payload = results.join('\n');
+    try {
+      await navigator.clipboard.writeText(payload);
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(()=> copyBtn.textContent = orig, 1200);
+    } catch (err) {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = payload;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(()=> copyBtn.textContent = 'Copy Results', 1200);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+  }
+
+  checkBtn.addEventListener('click', start);
+  copyBtn.addEventListener('click', copyResults);
   clearBtn.addEventListener('click', () => {
     logsEl.innerHTML = '';
+    pairs = [];
+    results = [];
+    setRunning(false);
     updateSummary(0,0,0,0);
+    copyBtn.disabled = true;
   });
 
-  // initial
+  // init
+  setRunning(false);
   updateSummary(0,0,0,0);
+  copyBtn.disabled = true;
 })();
 </script>
 </body>
