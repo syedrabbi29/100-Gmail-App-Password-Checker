@@ -1,144 +1,875 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gmail & App Password Checker</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f3f6; margin: 0; padding: 20px; }
-        .container { max-width: 950px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h2 { text-align: center; color: #1a73e8; margin-top: 0; }
-        label { font-weight: bold; margin-bottom: 6px; display: block; color: #333; }
-        textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 13px; resize: vertical; white-space: pre; }
-        .input-box { height: 180px; }
-        .btn-group { display: flex; gap: 12px; margin-top: 12px; }
-        button { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .btn-start { background: #28a745; color: white; }
-        .btn-start:disabled { background: #88c898; cursor: not-allowed; }
-        .btn-stop { background: #dc3545; color: white; }
-        .btn-stop:disabled { background: #e68d96; cursor: not-allowed; }
-        .btn-copy { width: 100%; padding: 10px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 6px; }
-        .btn-copy-success { background: #28a745; color: white; }
-        .btn-copy-failed { background: #dc3545; color: white; }
-        .stats-bar { margin-top: 18px; padding: 14px; background: #e8f0fe; border-left: 5px solid #1a73e8; border-radius: 4px; font-size: 16px; font-weight: bold; color: #1967d2; }
-        .result-grid { display: flex; gap: 15px; margin-top: 20px; }
-        .result-col { flex: 1; }
-        .result-col textarea { height: 160px; background: #fdfdfd; }
-        .log-box { margin-top: 20px; height: 150px; overflow-y: auto; background: #1e1e1e; color: #2ecc71; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Account Checker</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --text:#18202a;
+    --muted:#737d8c;
+    --border:#e7ebf1;
+    --blue:#2563eb;
+    --green:#16a34a;
+    --red:#dc2626;
+    --shadow:0 8px 28px rgba(20,30,50,.07);
+}
+
+body{
+    margin:0;
+    padding:16px;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+
+.container{
+    width:100%;
+    max-width:1000px;
+    margin:auto;
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.logo{
+    width:44px;
+    height:44px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#eaf1ff;
+    color:var(--blue);
+    font-size:21px;
+}
+
+.header h1{
+    font-size:20px;
+    margin:0;
+}
+
+.header p{
+    margin:3px 0 0;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:17px;
+    box-shadow:var(--shadow);
+    margin-bottom:15px;
+}
+
+.label{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:8px;
+}
+
+.label svg{
+    width:16px;
+    height:16px;
+}
+
+textarea{
+    width:100%;
+    border:1px solid var(--border);
+    outline:none;
+    border-radius:11px;
+    padding:12px;
+    background:#fafbfd;
+    color:var(--text);
+    font-family:monospace;
+    font-size:12px;
+    resize:vertical;
+    transition:.2s;
+}
+
+textarea:focus{
+    border-color:#9bb9ff;
+    background:#fff;
+}
+
+.input-box{
+    min-height:180px;
+}
+
+.actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:12px;
+}
+
+button{
+    border:0;
+    border-radius:11px;
+    min-height:44px;
+    padding:10px 13px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    transition:.15s;
+}
+
+button:active{
+    transform:scale(.98);
+}
+
+button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+}
+
+.start{
+    background:var(--green);
+    color:#fff;
+}
+
+.stop{
+    background:var(--red);
+    color:#fff;
+}
+
+.clear{
+    background:#eef1f5;
+    color:#303844;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:9px;
+}
+
+.stat{
+    border:1px solid var(--border);
+    background:#fafbfd;
+    border-radius:12px;
+    padding:12px 9px;
+    text-align:center;
+}
+
+.stat-icon{
+    width:30px;
+    height:30px;
+    margin:0 auto 6px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#edf2ff;
+    color:var(--blue);
+}
+
+.stat strong{
+    display:block;
+    font-size:17px;
+}
+
+.stat span{
+    display:block;
+    margin-top:2px;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.status-line{
+    margin-top:11px;
+    padding:10px 12px;
+    border-radius:10px;
+    background:#f7f8fa;
+    color:var(--muted);
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+.results{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+}
+
+.result-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+}
+
+.result-title span{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:13px;
+    font-weight:700;
+}
+
+.badge{
+    font-size:10px;
+    padding:4px 7px;
+    border-radius:20px;
+    background:#f1f3f6;
+    color:var(--muted);
+}
+
+.success-title{
+    color:var(--green);
+}
+
+.failed-title{
+    color:var(--red);
+}
+
+.result-area{
+    height:160px;
+}
+
+.copy{
+    width:100%;
+    margin-top:7px;
+    background:#f1f4f8;
+    color:#374151;
+}
+
+.log{
+    height:145px;
+    overflow-y:auto;
+    background:#111827;
+    color:#8df0ae;
+    border-radius:11px;
+    padding:11px;
+    font-family:monospace;
+    font-size:11px;
+    line-height:1.7;
+    word-break:break-word;
+}
+
+.log::-webkit-scrollbar{
+    width:4px;
+}
+
+.log::-webkit-scrollbar-thumb{
+    background:#374151;
+    border-radius:10px;
+}
+
+/* Toast */
+.toast-container{
+    position:fixed;
+    top:16px;
+    right:16px;
+    left:16px;
+    z-index:9999;
+    pointer-events:none;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:8px;
+}
+
+.toast{
+    width:min(360px,100%);
+    background:#fff;
+    border:1px solid var(--border);
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+    border-radius:13px;
+    padding:11px 13px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    animation:toastIn .2s ease;
+    pointer-events:auto;
+}
+
+.toast-icon{
+    width:31px;
+    height:31px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:none;
+}
+
+.toast.success .toast-icon{
+    background:#eaf8ef;
+    color:var(--green);
+}
+
+.toast.error .toast-icon{
+    background:#fdecec;
+    color:var(--red);
+}
+
+.toast.info .toast-icon{
+    background:#edf3ff;
+    color:var(--blue);
+}
+
+.toast-text{
+    font-size:12px;
+    font-weight:600;
+}
+
+@keyframes toastIn{
+    from{
+        opacity:0;
+        transform:translateY(-8px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@media(max-width:650px){
+    body{
+        padding:11px;
+    }
+
+    .card{
+        padding:13px;
+        border-radius:13px;
+    }
+
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .results{
+        grid-template-columns:1fr;
+    }
+
+    .header h1{
+        font-size:18px;
+    }
+}
+
+@media(max-width:380px){
+    .actions{
+        grid-template-columns:1fr;
+    }
+}
+</style>
 </head>
+
 <body>
 
+<div id="toastContainer" class="toast-container"></div>
+
 <div class="container">
-    <h2>Gmail Background Checker (Sheet Ready)</h2>
-    
-    <label>আপনার সম্পূর্ণ ডেটা এখানে পেস্ট করুন (Sheet থেকে একবারে পেস্ট করতে পারেন):</label>
-    <textarea id="rawInput" class="input-box" placeholder="exavijequpe45@gmail.com	pm0R8so1tQFY	obd4drjlykze3yqwmvv6a3r2kkwfvkx6	cshlimsffjyoltjf"></textarea>
 
-    <div class="btn-group">
-        <button id="startBtn" class="btn-start" onclick="startChecker()">Check শুরু করুন (30s Delay)</button>
-        <button id="stopBtn" class="btn-stop" onclick="stopChecker()" disabled>Stop করুন</button>
-    </div>
-
-    <div class="stats-bar" id="stats">
-        Status: নিষ্ক্রিয় | Total: 0 | Checked: 0 | Success: 0 ✅ | Failed: 0 ❌
-    </div>
-
-    <div class="result-grid">
-        <div class="result-col">
-            <label style="color:#28a745;">✅ ভালো জিমেইল (Success):</label>
-            <textarea id="successArea" readonly></textarea>
-            <button class="btn-copy btn-copy-success" onclick="copyData('successArea')">কপি Success List (Sheets-এ পেস্ট করুন)</button>
+    <div class="header">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="5" width="18" height="14" rx="3"/>
+                <path d="m4 7 8 6 8-6"/>
+            </svg>
         </div>
-        <div class="result-col">
-            <label style="color:#dc3545;">❌ বাদ জিমেইল (Failed):</label>
-            <textarea id="failedArea" readonly></textarea>
-            <button class="btn-copy btn-copy-failed" onclick="copyData('failedArea')">কপি Failed List (Sheets-এ পেস্ট করুন)</button>
+
+        <div>
+            <h1>Account Checker</h1>
+            <p>Fast, lightweight and mobile friendly</p>
         </div>
     </div>
 
-    <label style="margin-top:20px;">লাইভ লগ:</label>
-    <div class="log-box" id="logs">লগ এখানে দেখা যাবে...</div>
+    <div class="card">
+
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16v16H4z"/>
+                <path d="M8 8h8M8 12h8M8 16h5"/>
+            </svg>
+            Input Data
+        </div>
+
+        <textarea
+            id="rawInput"
+            class="input-box"
+            placeholder="Paste your data here..."
+        ></textarea>
+
+        <div class="actions">
+
+            <button id="startBtn" class="start" onclick="startChecker()">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                Start
+            </button>
+
+            <button id="stopBtn" class="stop" onclick="stopChecker()" disabled>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 7h10v10H7z"/>
+                </svg>
+                Stop
+            </button>
+
+        </div>
+
+        <button id="clearBtn" class="clear" onclick="clearAll()" style="width:100%;margin-top:9px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="m19 6-1 15H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+            </svg>
+            Clear All
+        </button>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"/>
+                <path d="m7 16 4-5 3 3 5-7"/>
+            </svg>
+            Statistics
+        </div>
+
+        <div class="stats">
+
+            <div class="stat">
+                <div class="stat-icon">T</div>
+                <strong id="totalStat">0</strong>
+                <span>Total</span>
+            </div>
+
+            <div class="stat">
+                <div class="stat-icon">C</div>
+                <strong id="checkedStat">0</strong>
+                <span>Checked</span>
+            </div>
+
+            <div class="stat">
+                <div class="stat-icon">✓</div>
+                <strong id="successStat">0</strong>
+                <span>Success</span>
+            </div>
+
+            <div class="stat">
+                <div class="stat-icon">×</div>
+                <strong id="failedStat">0</strong>
+                <span>Failed</span>
+            </div>
+
+        </div>
+
+        <div class="status-line" id="statusLine">
+            <span>●</span>
+            <span>System is idle</span>
+        </div>
+
+    </div>
+
+
+    <div class="results">
+
+        <div class="card">
+
+            <div class="result-title">
+                <span class="success-title">
+                    ✓ Success
+                </span>
+                <span class="badge" id="successBadge">0</span>
+            </div>
+
+            <textarea id="successArea" class="result-area" readonly></textarea>
+
+            <button class="copy" onclick="copyData('successArea')">
+                Copy Success
+            </button>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="result-title">
+                <span class="failed-title">
+                    × Failed
+                </span>
+                <span class="badge" id="failedBadge">0</span>
+            </div>
+
+            <textarea id="failedArea" class="result-area" readonly></textarea>
+
+            <button class="copy" onclick="copyData('failedArea')">
+                Copy Failed
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16v16H4z"/>
+                <path d="M7 8h10M7 12h6M7 16h8"/>
+            </svg>
+            Live Activity
+        </div>
+
+        <div class="log" id="logs">
+            Waiting for activity...
+        </div>
+
+    </div>
+
 </div>
 
+
 <script>
-async function fetchStatus() {
-    try {
+/* ===============================
+   ORIGINAL API LOGIC
+   =============================== */
+
+async function fetchStatus(){
+
+    try{
+
         const res = await fetch('/status');
         const data = await res.json();
 
         document.getElementById('startBtn').disabled = data.isRunning;
         document.getElementById('stopBtn').disabled = !data.isRunning;
 
-        document.getElementById('successArea').value = data.successList.join('\n');
-        document.getElementById('failedArea').value = data.failedList.join('\n');
+        document.getElementById('successArea').value =
+            data.successList.join('\n');
 
-        const stateText = data.isRunning ? "চলছে (30s পর পর) ⏳" : "নিষ্ক্রিয় / সম্পন্ন";
-        document.getElementById('stats').innerText = 
-            `Status: ${stateText} | Total: ${data.total} | Checked: ${data.checked} | Success: ${data.successCount} ✅ | Failed: ${data.failedCount} ❌`;
+        document.getElementById('failedArea').value =
+            data.failedList.join('\n');
 
-        const logBox = document.getElementById('logs');
-        if (data.logs.length > 0) {
-            logBox.innerHTML = data.logs.join('<br>');
-            logBox.scrollTop = logBox.scrollHeight;
+
+        document.getElementById('totalStat').innerText =
+            data.total;
+
+        document.getElementById('checkedStat').innerText =
+            data.checked;
+
+        document.getElementById('successStat').innerText =
+            data.successCount;
+
+        document.getElementById('failedStat').innerText =
+            data.failedCount;
+
+        document.getElementById('successBadge').innerText =
+            data.successCount;
+
+        document.getElementById('failedBadge').innerText =
+            data.failedCount;
+
+
+        const statusLine =
+            document.getElementById('statusLine');
+
+        if(data.isRunning){
+
+            statusLine.innerHTML =
+                '<span style="color:#16a34a">●</span>' +
+                '<span>Checking is running...</span>';
+
+        }else{
+
+            statusLine.innerHTML =
+                '<span>●</span>' +
+                '<span>System is idle / completed</span>';
         }
 
-    } catch (e) {
-        console.error("স্ট্যাটাস পাওয়া যায়নি", e);
+
+        const logBox =
+            document.getElementById('logs');
+
+        if(data.logs.length > 0){
+
+            logBox.innerHTML =
+                data.logs.join('<br>');
+
+            logBox.scrollTop =
+                logBox.scrollHeight;
+        }
+
+    }catch(e){
+
+        console.error("Status unavailable",e);
     }
 }
 
-async function startChecker() {
-    const rawData = document.getElementById('rawInput').value.trim();
 
-    if (!rawData) {
-        alert("দয়া করে ডেটা পেস্ট করুন!");
+/* ===============================
+   START
+   =============================== */
+
+async function startChecker(){
+
+    const rawData =
+        document.getElementById('rawInput').value.trim();
+
+    if(!rawData){
+
+        showToast(
+            "Please paste your data first.",
+            "error"
+        );
+
         return;
     }
 
-    try {
-        const res = await fetch('/start', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ data: rawData })
+    try{
+
+        const res = await fetch('/start',{
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json'
+            },
+            body:JSON.stringify({
+                data:rawData
+            })
         });
+
         const data = await res.json();
-        
-        if (data.status === 'success') {
+
+        if(data.status === 'success'){
+
+            showToast(
+                "Checking started successfully.",
+                "success"
+            );
+
             fetchStatus();
-        } else {
-            alert(data.message);
+
+        }else{
+
+            showToast(
+                data.message || "Unable to start.",
+                "error"
+            );
         }
-    } catch (err) {
-        alert("সার্ভার এরর!");
+
+    }catch(err){
+
+        showToast(
+            "Server error. Please try again.",
+            "error"
+        );
     }
 }
 
-async function stopChecker() {
-    try {
-        const res = await fetch('/stop', { method: 'POST' });
-        const data = await res.json();
-        alert(data.message);
+
+/* ===============================
+   STOP
+   =============================== */
+
+async function stopChecker(){
+
+    try{
+
+        const res =
+            await fetch('/stop',{
+                method:'POST'
+            });
+
+        const data =
+            await res.json();
+
+        showToast(
+            data.message || "Checking stopped.",
+            "info"
+        );
+
         fetchStatus();
-    } catch (err) {
-        alert("থামানো যায়নি!");
+
+    }catch(err){
+
+        showToast(
+            "Unable to stop the process.",
+            "error"
+        );
     }
 }
 
-function copyData(areaId) {
-    const area = document.getElementById(areaId);
-    if (!area.value.trim()) {
-        alert("কপি করার জন্য কোনো ডেটা নেই!");
+
+/* ===============================
+   CLEAR
+   =============================== */
+
+function clearAll(){
+
+    const input =
+        document.getElementById('rawInput');
+
+    const success =
+        document.getElementById('successArea');
+
+    const failed =
+        document.getElementById('failedArea');
+
+    const logs =
+        document.getElementById('logs');
+
+
+    input.value = '';
+    success.value = '';
+    failed.value = '';
+
+    document.getElementById('totalStat').innerText = '0';
+    document.getElementById('checkedStat').innerText = '0';
+    document.getElementById('successStat').innerText = '0';
+    document.getElementById('failedStat').innerText = '0';
+
+    document.getElementById('successBadge').innerText = '0';
+    document.getElementById('failedBadge').innerText = '0';
+
+    logs.innerHTML =
+        'Waiting for activity...';
+
+
+    document.getElementById('statusLine').innerHTML =
+        '<span>●</span><span>System is idle</span>';
+
+
+    showToast(
+        "All visible data has been cleared.",
+        "success"
+    );
+}
+
+
+/* ===============================
+   COPY
+   =============================== */
+
+async function copyData(areaId){
+
+    const area =
+        document.getElementById(areaId);
+
+    if(!area.value.trim()){
+
+        showToast(
+            "Nothing to copy.",
+            "error"
+        );
+
         return;
     }
-    area.select();
-    navigator.clipboard.writeText(area.value);
-    alert("কপি করা হয়েছে! সরাসরি Google Sheet-এ Paste (Ctrl+V) করুন।");
+
+    try{
+
+        await navigator.clipboard.writeText(
+            area.value
+        );
+
+        showToast(
+            "Copied successfully.",
+            "success"
+        );
+
+    }catch(e){
+
+        area.select();
+
+        document.execCommand('copy');
+
+        showToast(
+            "Copied successfully.",
+            "success"
+        );
+    }
 }
 
-setInterval(fetchStatus, 3000);
+
+/* ===============================
+   LIGHTWEIGHT TOAST
+   =============================== */
+
+function showToast(message,type='info'){
+
+    const container =
+        document.getElementById('toastContainer');
+
+    const toast =
+        document.createElement('div');
+
+    toast.className =
+        'toast ' + type;
+
+
+    let icon = 'i';
+
+    if(type === 'success') icon = '✓';
+    if(type === 'error') icon = '!';
+    
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            ${icon}
+        </div>
+
+        <div class="toast-text">
+            ${message}
+        </div>
+    `;
+
+
+    container.appendChild(toast);
+
+
+    setTimeout(()=>{
+
+        toast.style.opacity='0';
+        toast.style.transform='translateY(-6px)';
+
+        setTimeout(()=>{
+            toast.remove();
+        },180);
+
+    },2500);
+}
+
+
+/* ===============================
+   STATUS POLLING
+   =============================== */
+
+setInterval(fetchStatus,3000);
+
 fetchStatus();
 </script>
 
 </body>
-</html>
+    </html>
