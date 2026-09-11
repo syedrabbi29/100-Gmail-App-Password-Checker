@@ -1,20 +1,20 @@
 import imaplib
+import re
 import threading
 import time
 from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__, template_folder=".")
 
-# গ্লোবাল স্টেট (ব্যাকগ্রাউন্ড ডাটা সংরক্ষণ করার জন্য)
 task_state = {
     "is_running": False,
     "total": 0,
     "checked": 0,
     "success_count": 0,
     "failed_count": 0,
-    "success_list": [],  # ['email : pass', ...]
-    "failed_list": [],  # ['email : pass', ...]
-    "logs": [],  # লাইভ লগ মেসেজ
+    "success_list": [],
+    "failed_list": [],
+    "logs": [],
     "stop_requested": False,
 }
 
@@ -32,49 +32,68 @@ def verify_account(email, app_password):
         return False
 
 
-def background_worker(email_pass_pairs):
+def parse_line(line):
+    """
+    ট্যাব, কমা বা স্পেস দিয়ে আলাদা করা লাইনের ১ম অংশ ইমেইল এবং শেষ অংশ অ্যাপ পাসওয়ার্ড নেয়
+    """
+    # ট্যাব বা একাধিক স্পেস দিয়ে ভাগ করা
+    parts = re.split(r"[\t, ]+", line.strip())
+    if len(parts) >= 2:
+        email = parts[0]
+        # সাধারণত শেষ অংশটি ১৬ ডিজিটের অ্যাপ পাসওয়ার্ড হয়
+        app_password = parts[-1]
+        return email, app_password
+    return None, None
+
+
+def background_worker(data_lines):
     global task_state
 
     with state_lock:
         task_state["is_running"] = True
         task_state["stop_requested"] = False
-        task_state["total"] = len(email_pass_pairs)
+        task_state["total"] = len(data_lines)
         task_state["checked"] = 0
         task_state["success_count"] = 0
         task_state["failed_count"] = 0
         task_state["success_list"] = []
         task_state["failed_list"] = []
-        task_state["logs"] = ["ব্যাকগ্রাউন্ড চেকিং শুরু হয়েছে..."]
+        task_state["logs"] = ["চেকিং শুরু হয়েছে..."]
 
-    for idx, (email, pwd) in enumerate(email_pass_pairs):
-        # ইউজার যদি Stop বাটনে ক্লিক করে
+    for idx, raw_line in enumerate(data_lines):
         if task_state["stop_requested"]:
             with state_lock:
-                task_state["logs"].append("⛔ ব্যবহারকারী চেকিং বন্ধ করেছেন!")
+                task_state["logs"].append("⛔ ইউজার প্রসেস বন্ধ করেছেন!")
             break
 
-        # চেক করা
-        is_valid = verify_account(email, pwd)
+        email, app_pwd = parse_line(raw_line)
+
+        if not email or not app_pwd:
+            with state_lock:
+                task_state["checked"] = idx + 1
+                task_state["failed_count"] += 1
+                task_state["failed_list"].append(raw_line)
+                task_state["logs"].append(f"[{idx+1}] ❌ Invalid Line Format")
+            continue
+
+        is_valid = verify_account(email, app_pwd)
 
         with state_lock:
             task_state["checked"] = idx + 1
-            pair_str = f"{email}:{pwd}"
             if is_valid:
                 task_state["success_count"] += 1
-                task_state["success_list"].append(pair_str)
+                task_state["success_list"].append(raw_line)
                 task_state["logs"].append(f"[{idx+1}] ✅ Success: {email}")
             else:
                 task_state["failed_count"] += 1
-                task_state["failed_list"].append(pair_str)
+                task_state["failed_list"].append(raw_line)
                 task_state["logs"].append(f"[{idx+1}] ❌ Failed: {email}")
 
-            # লগ লিস্ট খুব বেশি বড় যেন না হয় (সর্বশেষ ১০০টি রাখবে)
             if len(task_state["logs"]) > 100:
                 task_state["logs"].pop(0)
 
-        # শেষ অ্যাকাউন্টের পর অপ্রয়োজনীয় বিরতি না দেওয়া
-        if idx < len(email_pass_pairs) - 1:
-            # ৩০ সেকেন্ডের স্লিপ (প্রতি সেকেন্ডে চেক করবে Stop চাপলো কিনা)
+        # শেষ অ্যাকাউন্টের পর অপ্রয়োজনীয় স্লিপ হবে না
+        if idx < len(data_lines) - 1:
             for _ in range(30):
                 if task_state["stop_requested"]:
                     break
@@ -83,7 +102,7 @@ def background_worker(email_pass_pairs):
     with state_lock:
         task_state["is_running"] = False
         if not task_state["stop_requested"]:
-            task_state["logs"].append("🎉 সব অ্যাকাউন্ট চেক করা সম্পন্ন হয়েছে!")
+            task_state["logs"].append("🎉 সব অ্যাকাউন্ট চেক করা শেষ!")
 
 
 @app.route("/")
@@ -97,52 +116,28 @@ def start_check():
     if task_state["is_running"]:
         return (
             jsonify(
-                {
-                    "status": "error",
-                    "message": "ইতিমধ্যে একটি টাস্ক ব্যাকগ্রাউন্ডে চলছে!",
-                }
+                {"status": "error", "message": "ইতিমধ্যে চেকিং চালু রয়েছে!"}
             ),
             400,
         )
 
     data = request.json or {}
-    emails = [
-        e.strip()
-        for e in data.get("emails", "").strip().split("\n")
-        if e.strip()
-    ]
-    passwords = [
-        p.strip()
-        for p in data.get("passwords", "").strip().split("\n")
-        if p.strip()
-    ]
+    raw_text = data.get("data", "").strip()
 
-    if not emails or not passwords:
+    if not raw_text:
         return (
-            jsonify({"status": "error", "message": "উভয় বক্সে তথ্য দিন!"}),
+            jsonify({"status": "error", "message": "কোনো ডেটা দেওয়া হয়নি!"}),
             400,
         )
 
-    if len(emails) != len(passwords):
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": f"ইমেইল ({len(emails)}) এবং পাসওয়ার্ডের ({len(passwords)}) সংখ্যা সমান নয়!",
-                }
-            ),
-            400,
-        )
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
 
-    pairs = list(zip(emails, passwords))
-
-    # ব্যাকগ্রাউন্ড থ্রেড রান করা
     thread = threading.Thread(
-        target=background_worker, args=(pairs,), daemon=True
+        target=background_worker, args=(lines,), daemon=True
     )
     thread.start()
 
-    return jsonify({"status": "success", "message": "চেকিং শুরু হয়েছে!"})
+    return jsonify({"status": "success", "message": "টাস্ক শুরু হয়েছে!"})
 
 
 @app.route("/stop", methods=["POST"])
@@ -150,10 +145,8 @@ def stop_check():
     global task_state
     if task_state["is_running"]:
         task_state["stop_requested"] = True
-        return jsonify(
-            {"status": "success", "message": "টাস্ক থামানোর নির্দেশ দেওয়া হয়েছে"}
-        )
-    return jsonify({"status": "error", "message": "কোনো টাস্ক চলছে না"})
+        return jsonify({"status": "success", "message": "থামানো হচ্ছে..."})
+    return jsonify({"status": "error", "message": "কোনো চেকিং চলছে না"})
 
 
 @app.route("/status", methods=["GET"])
