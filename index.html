@@ -3,94 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Background Gmail Checker (30s Delay)</title>
+    <title>Gmail & App Password Checker</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f3f6; margin: 0; padding: 20px; }
+        .container { max-width: 950px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         h2 { text-align: center; color: #1a73e8; margin-top: 0; }
-        .grid { display: flex; gap: 15px; margin-bottom: 15px; }
-        .box { flex: 1; display: flex; flex-direction: column; }
-        label { font-weight: bold; margin-bottom: 5px; color: #444; }
-        textarea { height: 160px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: vertical; font-size: 13px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        label { font-weight: bold; margin-bottom: 6px; display: block; color: #333; }
+        textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 13px; resize: vertical; white-space: pre; }
+        .input-box { height: 180px; }
+        .btn-group { display: flex; gap: 12px; margin-top: 12px; }
         button { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         .btn-start { background: #28a745; color: white; }
         .btn-start:disabled { background: #88c898; cursor: not-allowed; }
         .btn-stop { background: #dc3545; color: white; }
         .btn-stop:disabled { background: #e68d96; cursor: not-allowed; }
-        .btn-copy { background: #4b6584; color: white; padding: 8px; margin-top: 8px; }
-        .stats-bar { margin-top: 20px; padding: 15px; background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center; color: #1967d2; }
+        .btn-copy { width: 100%; padding: 10px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 6px; }
+        .btn-copy-success { background: #28a745; color: white; }
+        .btn-copy-failed { background: #dc3545; color: white; }
+        .stats-bar { margin-top: 18px; padding: 14px; background: #e8f0fe; border-left: 5px solid #1a73e8; border-radius: 4px; font-size: 16px; font-weight: bold; color: #1967d2; }
         .result-grid { display: flex; gap: 15px; margin-top: 20px; }
-        .result-box { flex: 1; display: flex; flex-direction: column; }
-        .result-box textarea { height: 140px; background: #fafafa; }
-        .log-box { margin-top: 20px; height: 160px; overflow-y: auto; background: #212529; color: #38ef7d; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; }
+        .result-col { flex: 1; }
+        .result-col textarea { height: 160px; background: #fdfdfd; }
+        .log-box { margin-top: 20px; height: 150px; overflow-y: auto; background: #1e1e1e; color: #2ecc71; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Gmail App Password Background Checker</h2>
-    <p style="text-align:center; color:#666; margin-top:-10px; font-size:14px;">প্রতি ৩০ সেকেন্ড পর পর ব্যাকগ্রাউন্ডে ১টি করে চেক হবে (ব্রাউজার কাটলেও চলবে)</p>
-
-    <div class="grid">
-        <div class="box">
-            <label>ইমেইল লিস্ট:</label>
-            <textarea id="emails" placeholder="example1@gmail.com&#10;example2@gmail.com"></textarea>
-        </div>
-        <div class="box">
-            <label>অ্যাপ পাসওয়ার্ড লিস্ট:</label>
-            <textarea id="passwords" placeholder="abcd efgh ijkl mnop&#10;qrst uvwx yzab cdef"></textarea>
-        </div>
-    </div>
+    <h2>Gmail Background Checker (Sheet Ready)</h2>
+    
+    <label>আপনার সম্পূর্ণ ডেটা এখানে পেস্ট করুন (Sheet থেকে একবারে পেস্ট করতে পারেন):</label>
+    <textarea id="rawInput" class="input-box" placeholder="exavijequpe45@gmail.com	pm0R8so1tQFY	obd4drjlykze3yqwmvv6a3r2kkwfvkx6	cshlimsffjyoltjf"></textarea>
 
     <div class="btn-group">
-        <button id="startBtn" class="btn-start" onclick="startChecker()">Check শুরু করুন</button>
+        <button id="startBtn" class="btn-start" onclick="startChecker()">Check শুরু করুন (30s Delay)</button>
         <button id="stopBtn" class="btn-stop" onclick="stopChecker()" disabled>Stop করুন</button>
     </div>
 
     <div class="stats-bar" id="stats">
-        Status: নিষ্ক্রিয় | Progress: 0/0 | Success: 0 ✅ | Failed: 0 ❌
+        Status: নিষ্ক্রিয় | Total: 0 | Checked: 0 | Success: 0 ✅ | Failed: 0 ❌
     </div>
 
     <div class="result-grid">
-        <div class="result-box">
-            <label style="color:#28a745;">✅ সফল অ্যাকাউন্ট (Success):</label>
+        <div class="result-col">
+            <label style="color:#28a745;">✅ ভালো জিমেইল (Success):</label>
             <textarea id="successArea" readonly></textarea>
-            <button class="btn-copy" onclick="copyText('successArea')">কপি Success List</button>
+            <button class="btn-copy btn-copy-success" onclick="copyData('successArea')">কপি Success List (Sheets-এ পেস্ট করুন)</button>
         </div>
-        <div class="result-box">
-            <label style="color:#dc3545;">❌ ব্যর্থ অ্যাকাউন্ট (Failed):</label>
+        <div class="result-col">
+            <label style="color:#dc3545;">❌ বাদ জিমেইল (Failed):</label>
             <textarea id="failedArea" readonly></textarea>
-            <button class="btn-copy" onclick="copyText('failedArea')">কপি Failed List</button>
+            <button class="btn-copy btn-copy-failed" onclick="copyData('failedArea')">কপি Failed List (Sheets-এ পেস্ট করুন)</button>
         </div>
     </div>
 
-    <label style="display:block; margin-top:15px; font-weight:bold;">রিয়েল-টাইম লগ:</label>
+    <label style="margin-top:20px;">লাইভ লগ:</label>
     <div class="log-box" id="logs">লগ এখানে দেখা যাবে...</div>
 </div>
 
 <script>
-let pollInterval = null;
-
 async function fetchStatus() {
     try {
         const res = await fetch('/status');
         const data = await res.json();
 
-        // বাটন কন্ট্রোল
         document.getElementById('startBtn').disabled = data.isRunning;
         document.getElementById('stopBtn').disabled = !data.isRunning;
 
-        // টেক্সট এরিয়া আপডেট
         document.getElementById('successArea').value = data.successList.join('\n');
         document.getElementById('failedArea').value = data.failedList.join('\n');
 
-        // স্ট্যাটাস বার আপডেট
-        const stateText = data.isRunning ? "চলছে (Running ⏳)" : "সম্পন্ন / নিষ্ক্রিয়";
+        const stateText = data.isRunning ? "চলছে (30s পর পর) ⏳" : "নিষ্ক্রিয় / সম্পন্ন";
         document.getElementById('stats').innerText = 
-            `Status: ${stateText} | Progress: ${data.checked}/${data.total} | Success: ${data.successCount} ✅ | Failed: ${data.failedCount} ❌`;
+            `Status: ${stateText} | Total: ${data.total} | Checked: ${data.checked} | Success: ${data.successCount} ✅ | Failed: ${data.failedCount} ❌`;
 
-        // লগ বক্স
         const logBox = document.getElementById('logs');
         if (data.logs.length > 0) {
             logBox.innerHTML = data.logs.join('<br>');
@@ -98,16 +84,15 @@ async function fetchStatus() {
         }
 
     } catch (e) {
-        console.error("স্ট্যাটাস আনতে সমস্যা হয়েছে", e);
+        console.error("স্ট্যাটাস পাওয়া যায়নি", e);
     }
 }
 
 async function startChecker() {
-    const emails = document.getElementById('emails').value.trim();
-    const passwords = document.getElementById('passwords').value.trim();
+    const rawData = document.getElementById('rawInput').value.trim();
 
-    if (!emails || !passwords) {
-        alert("উভয় বক্সে তথ্য দিন!");
+    if (!rawData) {
+        alert("দয়া করে ডেটা পেস্ট করুন!");
         return;
     }
 
@@ -115,7 +100,7 @@ async function startChecker() {
         const res = await fetch('/start', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ emails, passwords })
+            body: JSON.stringify({ data: rawData })
         });
         const data = await res.json();
         
@@ -125,7 +110,7 @@ async function startChecker() {
             alert(data.message);
         }
     } catch (err) {
-        alert("সার্ভারে সমস্যা হয়েছে!");
+        alert("সার্ভার এরর!");
     }
 }
 
@@ -140,18 +125,17 @@ async function stopChecker() {
     }
 }
 
-function copyText(areaId) {
+function copyData(areaId) {
     const area = document.getElementById(areaId);
     if (!area.value.trim()) {
-        alert("কপি করার মতো কিছু নেই!");
+        alert("কপি করার জন্য কোনো ডেটা নেই!");
         return;
     }
     area.select();
     navigator.clipboard.writeText(area.value);
-    alert("কপি করা হয়েছে!");
+    alert("কপি করা হয়েছে! সরাসরি Google Sheet-এ Paste (Ctrl+V) করুন।");
 }
 
-// প্রতি ৩ সেকেন্ড পর পর সার্ভার থেকে লাইভ স্ট্যাটাস ফেচ করবে
 setInterval(fetchStatus, 3000);
 fetchStatus();
 </script>
