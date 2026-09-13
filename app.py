@@ -33,14 +33,9 @@ def verify_account(email, app_password):
 
 
 def parse_line(line):
-    """
-    ট্যাব, কমা বা স্পেস দিয়ে আলাদা করা লাইনের ১ম অংশ ইমেইল এবং শেষ অংশ অ্যাপ পাসওয়ার্ড নেয়
-    """
-    # ট্যাব বা একাধিক স্পেস দিয়ে ভাগ করা
     parts = re.split(r"[\t, ]+", line.strip())
     if len(parts) >= 2:
         email = parts[0]
-        # সাধারণত শেষ অংশটি ১৬ ডিজিটের অ্যাপ পাসওয়ার্ড হয়
         app_password = parts[-1]
         return email, app_password
     return None, None
@@ -92,7 +87,6 @@ def background_worker(data_lines):
             if len(task_state["logs"]) > 100:
                 task_state["logs"].pop(0)
 
-        # শেষ অ্যাকাউন্টের পর অপ্রয়োজনীয় স্লিপ হবে না
         if idx < len(data_lines) - 1:
             for _ in range(30):
                 if task_state["stop_requested"]:
@@ -147,6 +141,34 @@ def stop_check():
         task_state["stop_requested"] = True
         return jsonify({"status": "success", "message": "থামানো হচ্ছে..."})
     return jsonify({"status": "error", "message": "কোনো চেকিং চলছে না"})
+
+
+@app.route("/clear", methods=["POST"])
+def clear_state():
+    global task_state
+    if task_state["is_running"]:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "চেকিং চলাকালীন ডেটা ক্লিয়ার করা যাবে না! আগে Stop করুন।",
+                }
+            ),
+            400,
+        )
+
+    with state_lock:
+        task_state["total"] = 0
+        task_state["checked"] = 0
+        task_state["success_count"] = 0
+        task_state["failed_count"] = 0
+        task_state["success_list"] = []
+        task_state["failed_list"] = []
+        task_state["logs"] = []
+
+    return jsonify(
+        {"status": "success", "message": "সব ডেটা সম্পূর্ণ ক্লিয়ার করা হয়েছে!"}
+    )
 
 
 @app.route("/status", methods=["GET"])
